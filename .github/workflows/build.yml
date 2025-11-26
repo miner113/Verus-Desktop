@@ -2,9 +2,9 @@ name: Build Verus Desktop
 
 on:
   push:
-    branches: [main, develop, release/*]
+    branches: [main, master, release/*]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 env:
   DEFAULT_VERUSCOIN_BRANCH: release
