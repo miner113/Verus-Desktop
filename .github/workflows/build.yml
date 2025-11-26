@@ -53,28 +53,7 @@ jobs:
         mkdir -p assets/bin/linux64/verusd
         mkdir -p assets/bin/linux64/komodod
         mkdir -p assets/bin/linux64/pirated
-        
-    - name: Download and extract Verus CLI
-      run: |
-        # Временное решение - скачиваем из официального релиза
-        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tgz
-        tar -xzvf Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tgz --strip=1 --directory assets/bin/linux64/verusd
-        rm Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tgz
-        
-    - name: Download Komodo
-      run: |
-        wget ${KOMODO_DOWNLOAD_URL}/v${KOMODO_VERSION}/${KOMODO_CLI_PACKAGE}
-        echo "${KOMODO_CLI_SHA256} ${KOMODO_CLI_PACKAGE}" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
-        tar -xzvf ${KOMODO_CLI_PACKAGE} --directory assets/bin/linux64/komodod
-        rm ${KOMODO_CLI_PACKAGE}
-        
-    - name: Download Pirate
-      run: |
-        wget ${PIRATE_DOWNLOAD_URL}/v${PIRATE_VERSION}/${PIRATE_CLI_PACKAGE}
-        echo "${PIRATE_CLI_SHA256} ${PIRATE_CLI_PACKAGE}" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
-        unzip ${PIRATE_CLI_PACKAGE} -d assets/bin/linux64/pirated
-        rm ${PIRATE_CLI_PACKAGE}
-        
+          
     - name: Setup API keys
       run: |
         sed -i "s/process.env.INFURA_PROJECT_ID/'${{ secrets.INFURA_PROJECT_ID }}'/g" keys/infura.js
@@ -139,25 +118,7 @@ jobs:
         yarn install
         NODE_OPTIONS="--openssl-legacy-provider" yarn run build
         cd ../../..
-        
-    - name: Setup binaries directory
-      run: |
-        mkdir -p assets/bin/linux64/verusd
-        mkdir -p assets/bin/linux64/pirated
-        
-    - name: Download and extract Verus CLI
-      run: |
-        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tgz
-        tar -xzvf Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tgz --strip=1 --directory assets/bin/linux64/verusd
-        rm Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tgz
-        
-    - name: Download Pirate
-      run: |
-        wget ${PIRATE_DOWNLOAD_URL}/v${PIRATE_VERSION}/${PIRATE_CLI_PACKAGE}
-        echo "${PIRATE_CLI_SHA256} ${PIRATE_CLI_PACKAGE}" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
-        unzip ${PIRATE_CLI_PACKAGE} -d assets/bin/linux64/pirated
-        rm ${PIRATE_CLI_PACKAGE}
-        
+
     - name: Setup API keys
       run: |
         sed -i "s/process.env.INFURA_PROJECT_ID/'${{ secrets.INFURA_PROJECT_ID }}'/g" keys/infura.js
@@ -221,34 +182,6 @@ jobs:
         yarn run build
         cd ../../..
         
-    - name: Setup binaries directory
-      run: |
-        mkdir -p assets/bin/win64/komodod
-        mkdir -p assets/bin/win64/pirated
-        
-    - name: Download Komodo
-      run: |
-        wget ${KOMODO_DOWNLOAD_URL}/v${KOMODO_VERSION}/komodo-${KOMODO_VERSION}-win.zip
-        echo "0b36821ebccdaf6bc060dc31083e6d8f48f7f8bc35e519b127bf1ccc05cf9890 komodo-${KOMODO_VERSION}-win.zip" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
-        unzip -j komodo-${KOMODO_VERSION}-win.zip komodod.exe -d assets/bin/win64/komodod
-        unzip -j komodo-${KOMODO_VERSION}-win.zip komodo-cli.exe -d assets/bin/win64/komodod
-        unzip -j komodo-${KOMODO_VERSION}-win.zip wallet-utility.exe -d assets/bin/win64/komodod
-        rm komodo-${KOMODO_VERSION}-win.zip
-        
-    - name: Download and extract Verus CLI
-      run: |
-        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip
-        unzip -qq Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip -d assets/bin/win64
-        mv assets/bin/win64/verus-cli assets/bin/win64/verusd
-        rm Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip
-        
-    - name: Download Pirate
-      run: |
-        wget ${PIRATE_DOWNLOAD_URL}/v${PIRATE_VERSION}/pirate-cli-windows-v${PIRATE_VERSION}.zip
-        echo "deb338bf2bcabfdb32be3c13dfaed78d83749fbae9d3985e47cb001ff058bb3f pirate-cli-windows-v${PIRATE_VERSION}.zip" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
-        unzip pirate-cli-windows-v${PIRATE_VERSION}.zip -d assets/bin/win64/pirated
-        rm pirate-cli-windows-v${PIRATE_VERSION}.zip
-        
     - name: Setup API keys
       run: |
         sed -i "s/process.env.INFURA_PROJECT_ID/'${{ secrets.INFURA_PROJECT_ID }}'/g" keys/infura.js
@@ -310,32 +243,6 @@ jobs:
         yarn install
         yarn run build
         cd ../../..
-        
-    - name: Setup binaries directory
-      run: |
-        mkdir -p assets/bin/osx/verusd
-        mkdir -p assets/bin/osx/komodod
-        mkdir -p assets/bin/osx/pirated
-        
-    - name: Download and extract Verus CLI
-      run: |
-        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tgz
-        tar -xzf Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tgz --strip=1 --directory assets/bin/osx/verusd
-        rm Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tgz
-        
-    - name: Download Komodo
-      run: |
-        wget ${KOMODO_DOWNLOAD_URL}/v${KOMODO_VERSION}/komodo-${KOMODO_VERSION}-mac.zip
-        echo "1a092af97b34f4e2ea99b95a91599fc4fdca3881c7e3afa468a5df043a460694 komodo-${KOMODO_VERSION}-mac.zip" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
-        unzip komodo-${KOMODO_VERSION}-mac.zip -d assets/bin/osx/komodod
-        rm komodo-${KOMODO_VERSION}-mac.zip
-        
-    - name: Download Pirate
-      run: |
-        wget ${PIRATE_DOWNLOAD_URL}/v${PIRATE_VERSION}/pirate-cli-MacOS-v${PIRATE_VERSION}.zip
-        echo "c20a761c36e494cd2b19237162881bb0dcdae24e6eec996072cc5ee7135e8362 pirate-cli-MacOS-v${PIRATE_VERSION}.zip" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
-        unzip pirate-cli-MacOS-v${PIRATE_VERSION}.zip -d assets/bin/osx/pirated
-        rm pirate-cli-MacOS-v${PIRATE_VERSION}.zip
         
     - name: Setup API keys
       run: |
