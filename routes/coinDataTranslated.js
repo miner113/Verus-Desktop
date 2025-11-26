@@ -113,17 +113,17 @@ var getCoinObj = function getCoinObj(chainTicker) {
         _defineProperty(_tags, 'is_sapling', true),
         _defineProperty(_tags, 'z_only', true),
         _tags);
-      }
-
-      if (
+      }if (
         _coinHelpers.default.isKomodoCoin &&
         chainTickerUc !== "VRSC" &&
         chainTickerUc !== "VRSCTEST"
-      ) {
+        ) {
         coinObj.options.daemon = 'komodod'; // komodod
-      } else {
+        } else if (chainTickerUc === "GRMS") {
+        coinObj.options.daemon = 'grmsd'; // grmsd
+        } else {
         coinObj.options.daemon = 'verusd'; // verusd
-      }
+        }
     }
 
     if (_electrumServers.default.electrumServers[chainTickerLc]) {
@@ -162,31 +162,6 @@ var getCoinObj = function getCoinObj(chainTicker) {
         tags['is_pbaas_root'] = true;
     }
   }
-  /* Final coin object structure, when it is dispatched to the store
-    {
-      id: 'VRSC',                                // Coin's chain ticker
-      name: Verus,                               // Coin name
-      tags: [                                    // Tags for coin to identify properties
-        'is_sapling',
-        'is_zcash',
-        'is_pbaas',
-        'is_pbaas_root'],
-      available_modes: {                         // Modes in which this coin can be activated
-        'native': true,
-        'electrum': true,
-        'eth': false
-      },
-      options: {
-        explorer: https://explorer.verus.io, // (Optional) Explorer URL.
-        saplingHeight: 10000,                    // (Optional) height at which sapling will be activated for the chain
-        dustThreshold: 0.00001,                  // (Optional) Network threshold for dust values
-        daemon: 'verusd',                        // (Optional) Specify a custom daemon for native mode
-        startupOptions: ['-mint']                // (Optional) Added in a later step, native options for daemon start
-      },
-      isPbaasChain: false,                       // Boolean to decide whether or not to skip coin compatability check
-      themeColor: hexCode                        // Theme color for coin to add, added to coin object in addCoin asynchronously
-    }
-  */
 
   return {
     ...coinObj,

@@ -1,4 +1,4 @@
-name: Build Verus Desktop
+name: Build Verus Desktop Win
 
 on:
   push:

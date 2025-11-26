@@ -2,12 +2,15 @@ const chainParams = {
 	KMD: {
 		daemon: 0
 	},
-  VRSC: {
+	GRMS: {
+		ac_name: "GRMS"
+	},
+	VRSC: {
 		ac_name: "VRSC"
-  },
-  VRSCTEST: {
+	},
+	VRSCTEST: {
 		ac_name: "VRSCTEST"
-  },
+	},
 	SUPERNET: {
 		ac_name: "SUPERNET",
 		ac_supply: 816061,

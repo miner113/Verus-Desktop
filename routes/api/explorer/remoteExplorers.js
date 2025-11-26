@@ -16,6 +16,7 @@ const remoteExplorers = {
   COQUI: 'https://explorer.coqui.cash',
   MNZ: 'https://www.mnzexplorer.com',
   VRSC: 'https://explorer.verus.io/',
+  GRMS: 'http://explorer.grms.io',
   PIRATE: 'https://pirate.kmdexplorer.io',
   VRSCTEST: 'https://testex.verus.io'
 };

@@ -52,6 +52,7 @@ const assetChainPorts = {
   DP: 28388,
   VRSCTEST: 18843,
   VRSC: 27486,
+  GRMS: 43119,
   VOTE2020: 44249,
   VOTE2021: 55638
 };
