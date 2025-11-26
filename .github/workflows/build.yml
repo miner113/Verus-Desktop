@@ -10,38 +10,35 @@ env:
   DEFAULT_VERUSCOIN_BRANCH: release
   VERUS_VERSION: 1.2.12-2
   VERUSCOIN_VERSION: 1.2.12-2
+  KOMODO_VERSION: 0.9.0
+  KOMODO_DOWNLOAD_URL: https://github.com/KomodoPlatform/komodo/releases/download
+  PIRATE_VERSION: 5.9.0
+  PIRATE_DOWNLOAD_URL: https://github.com/PirateNetwork/pirate/releases/download
   BINARY_SOURCE: VerusCoin
   NODE_OPTIONS: --openssl-legacy-provider
 
 jobs:
-  build-windows-on-linux:
+  build-windows-cross:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [x64, ia32]
+    container:
+      image: asherd/agama-builder:windows
+    env:
+      KOMODO_CLI_PACKAGE: komodo-${KOMODO_VERSION}-win.zip
+      KOMODO_CLI_SHA256: 0b36821ebccdaf6bc060dc31083e6d8f48f7f8bc35e519b127bf1ccc05cf9890
+      PIRATE_CLI_PACKAGE: pirate-cli-windows-v${PIRATE_VERSION}.zip
+      PIRATE_CLI_SHA256: deb338bf2bcabfdb32be3c13dfaed78d83749fbae9d3985e47cb001ff058bb3f
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
         
-    - name: Setup Node.js 16
-      uses: actions/setup-node@v4
-      with:
-        node-version: '16.20.2'
-        
-    - name: Install Wine and dependencies for Windows cross-compilation
+    - name: Setup environment
       run: |
-        sudo dpkg --add-architecture i386
-        sudo apt-get update
-        sudo apt-get install -y \
-          wine64 wine32 development-tools \
-          libgtk-3-dev libnotify-dev libgconf-2-4 \
-          libnss3 libxss1 libasound2 libxtst6 \
-          xvfb libsecret-1-dev fakeroot rpm \
-          mono-complete nsis
-        
-    - name: Install yarn
-      run: npm install -g yarn
+        if [ -z "${UPSTREAM_CLI_BRANCH}" ]; then 
+          export VERUS_CLI_WINDOWS="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/Windows/Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip"
+        else
+          export VERUS_CLI_WINDOWS="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/Windows/Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip"
+        fi
         
     - name: Build React GUI
       run: |
@@ -49,6 +46,11 @@ jobs:
         yarn install
         yarn run build
         cd ../../..
+        
+    - name: Setup binaries directory
+      run: |
+        mkdir -p assets/bin/win64/komodod
+        mkdir -p assets/bin/win64/pirated
         
     - name: Setup API keys
       run: |
@@ -86,35 +88,27 @@ jobs:
         cd ..
         rm -rf verus-pbaas-visualizer
         
-    - name: Setup Windows binaries directory
-      run: |
-        mkdir -p assets/bin/win64/verusd
-        mkdir -p assets/bin/win64/komodod
-        mkdir -p assets/bin/win64/pirated
-        
     - name: Build Windows application
       run: |
-        export DISPLAY=:99.0
+        # Используем Wine для кросскомпиляции Windows версии
+        export DISPLAY=:99
         Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
         
-        if [ "${{ matrix.arch }}" = "x64" ]; then
-          yarn run dist-win --x64
-        else
-          yarn run dist-win --ia32
-        fi
+        # Собираем Windows версию
+        yarn run dist-win
       
     - name: Check built artifacts
       run: |
-        echo "=== Windows Build Artifacts (${{ matrix.arch }}) ==="
+        echo "=== Windows Build Artifacts ==="
         ls -la dist/
+        echo "=== File Details ==="
+        file dist/* || true
         echo "=== File Sizes ==="
         du -h dist/*
       
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: verus-desktop-windows-${{ matrix.arch }}
+        name: verus-desktop-windows-cross
         path: dist/
         retention-days: 30
-
- 
