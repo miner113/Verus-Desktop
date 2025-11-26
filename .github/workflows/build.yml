@@ -10,16 +10,15 @@ env:
   DEFAULT_VERUSCOIN_BRANCH: release
   VERUS_VERSION: 1.2.12-2
   VERUSCOIN_VERSION: 1.2.12-2
-  KOMODO_VERSION: 0.9.0
-  KOMODO_DOWNLOAD_URL: https://github.com/KomodoPlatform/komodo/releases/download
-  PIRATE_VERSION: 5.9.0
-  PIRATE_DOWNLOAD_URL: https://github.com/PirateNetwork/pirate/releases/download
   BINARY_SOURCE: VerusCoin
   NODE_OPTIONS: --openssl-legacy-provider
 
 jobs:
-   build-windows:
-    runs-on: windows-latest
+  build-windows-on-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x64, ia32]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -29,6 +28,17 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '16.20.2'
+        
+    - name: Install Wine and dependencies for Windows cross-compilation
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt-get update
+        sudo apt-get install -y \
+          wine64 wine32 development-tools \
+          libgtk-3-dev libnotify-dev libgconf-2-4 \
+          libnss3 libxss1 libasound2 libxtst6 \
+          xvfb libsecret-1-dev fakeroot rpm \
+          mono-complete nsis
         
     - name: Install yarn
       run: npm install -g yarn
@@ -40,11 +50,10 @@ jobs:
         yarn run build
         cd ../../..
         
-    - name: Setup API keys (Windows)
-      shell: pwsh
+    - name: Setup API keys
       run: |
-        (Get-Content keys/infura.js) -replace "process.env.INFURA_PROJECT_ID", "'${{ secrets.INFURA_PROJECT_ID }}'" | Set-Content keys/infura.js
-        (Get-Content keys/etherscan.js) -replace "process.env.ETHERSCAN_API_KEY", "'${{ secrets.ETHERSCAN_KEY }}'" | Set-Content keys/etherscan.js
+        sed -i "s/process.env.INFURA_PROJECT_ID/'${{ secrets.INFURA_PROJECT_ID }}'/g" keys/infura.js
+        sed -i "s/process.env.ETHERSCAN_API_KEY/'${{ secrets.ETHERSCAN_KEY }}'/g" keys/etherscan.js
         
     - name: Install main dependencies
       run: yarn install
@@ -63,37 +72,49 @@ jobs:
         cd verus-login-consent-client
         yarn install
         yarn run build
-        if (!(Test-Path "../assets/plugins/builtin/verus-login-consent-client")) {
-          New-Item -ItemType Directory -Path "../assets/plugins/builtin/verus-login-consent-client" -Force
-        }
-        Copy-Item -Path "build/*" -Destination "../assets/plugins/builtin/verus-login-consent-client/" -Recurse
+        mkdir -p ../assets/plugins/builtin/verus-login-consent-client
+        cp -r build/* ../assets/plugins/builtin/verus-login-consent-client/
         cd ..
-        Remove-Item -Path "verus-login-consent-client" -Recurse -Force
+        rm -rf verus-login-consent-client
         
         git clone https://github.com/VerusCoin/verus-pbaas-visualizer.git
         cd verus-pbaas-visualizer
         yarn install
         yarn run build
-        if (!(Test-Path "../assets/plugins/builtin/verus-pbaas-visualizer")) {
-          New-Item -ItemType Directory -Path "../assets/plugins/builtin/verus-pbaas-visualizer" -Force
-        }
-        Copy-Item -Path "build/*" -Destination "../assets/plugins/builtin/verus-pbaas-visualizer/" -Recurse
+        mkdir -p ../assets/plugins/builtin/verus-pbaas-visualizer
+        cp -r build/* ../assets/plugins/builtin/verus-pbaas-visualizer/
         cd ..
-        Remove-Item -Path "verus-pbaas-visualizer" -Recurse -Force
+        rm -rf verus-pbaas-visualizer
         
-    - name: Build application
-      run: yarn run dist-win
+    - name: Setup Windows binaries directory
+      run: |
+        mkdir -p assets/bin/win64/verusd
+        mkdir -p assets/bin/win64/komodod
+        mkdir -p assets/bin/win64/pirated
+        
+    - name: Build Windows application
+      run: |
+        export DISPLAY=:99.0
+        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        
+        if [ "${{ matrix.arch }}" = "x64" ]; then
+          yarn run dist-win --x64
+        else
+          yarn run dist-win --ia32
+        fi
       
     - name: Check built artifacts
       run: |
-        echo "=== Windows Build Artifacts ==="
-        dir dist\
+        echo "=== Windows Build Artifacts (${{ matrix.arch }}) ==="
+        ls -la dist/
         echo "=== File Sizes ==="
-        Get-ChildItem dist\ | ForEach-Object { Write-Output "$($_.Name): $([math]::Round($_.Length/1MB, 2)) MB" }
+        du -h dist/*
       
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: verus-desktop-windows
+        name: verus-desktop-windows-${{ matrix.arch }}
         path: dist/
         retention-days: 30
+
+ 
