@@ -15,7 +15,6 @@ env:
   PIRATE_VERSION: 5.9.0
   PIRATE_DOWNLOAD_URL: https://github.com/PirateNetwork/pirate/releases/download
   BINARY_SOURCE: VerusCoin
-  NODE_OPTIONS: --openssl-legacy-provider
 
 jobs:
   build-macos:
@@ -43,6 +42,7 @@ jobs:
       run: |
         cd gui/Verus-Desktop-GUI/react
         yarn install --frozen-lockfile
+        # Для macOS используем обычную сборку без NODE_OPTIONS
         yarn run build
         cd ../../..
         
