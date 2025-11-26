@@ -18,7 +18,7 @@ env:
   NODE_OPTIONS: --openssl-legacy-provider
 
 jobs:
-   build-windows-cross:
+  build-windows-cross:
     runs-on: ubuntu-latest
     container:
       image: asherd/agama-builder:windows
@@ -31,6 +31,17 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+        
+    - name: Setup Wine environment
+      run: |
+        # Настраиваем Wine для работы в CI
+        export WINEPREFIX=/tmp/wineprefix
+        export WINEARCH=win64
+        mkdir -p $WINEPREFIX
+        # Инициализируем Wine
+        wineboot --init
+        # Даем время на инициализацию
+        sleep 5
         
     - name: Setup environment
       run: |
@@ -51,7 +62,7 @@ jobs:
       run: |
         mkdir -p assets/bin/win64/komodod
         mkdir -p assets/bin/win64/pirated
-        
+
     - name: Setup API keys
       run: |
         sed -i "s/process.env.INFURA_PROJECT_ID/'${{ secrets.INFURA_PROJECT_ID }}'/g" keys/infura.js
@@ -60,52 +71,18 @@ jobs:
     - name: Install main dependencies
       run: yarn install
       
-    - name: Install patch-package if needed
+    - name: Build Windows application with proper Wine config
       run: |
-        # Проверяем, есть ли patch-package в package.json
-        if grep -q "patch-package" package.json; then
-          echo "Installing patch-package..."
-          yarn add -D patch-package
-          yarn run patch-package
-        else
-          echo "patch-package not found in package.json, skipping..."
-        fi
-      
-    - name: Build react-terminal dependency
-      run: |
-        # Собираем react-terminal если нужно
-        if [ -d "node_modules/react-terminal" ]; then
-          cd node_modules/react-terminal
-          yarn install || npm install
-          yarn run build || npm run build || echo "Build command not found, continuing..."
-          cd ../..
-        else
-          echo "react-terminal not found, skipping..."
-        fi
-      
-    - name: Build plugins
-      run: |
-        git clone https://github.com/VerusCoin/verus-login-consent-client.git
-        cd verus-login-consent-client
-        yarn install
-        yarn run build
-        mkdir -p ../assets/plugins/builtin/verus-login-consent-client
-        cp -r build/* ../assets/plugins/builtin/verus-login-consent-client/
-        cd ..
-        rm -rf verus-login-consent-client
+        # Настраиваем переменные окружения для Wine
+        export WINEPREFIX=/tmp/wineprefix
+        export WINEARCH=win64
+        export HOME=/tmp
         
-        git clone https://github.com/VerusCoin/verus-pbaas-visualizer.git
-        cd verus-pbaas-visualizer
-        yarn install
-        yarn run build
-        mkdir -p ../assets/plugins/builtin/verus-pbaas-visualizer
-        cp -r build/* ../assets/plugins/builtin/verus-pbaas-visualizer/
-        cd ..
-        rm -rf verus-pbaas-visualizer
+        # Инициализируем Wine
+        wineboot --init
+        sleep 10
         
-    - name: Build Windows application
-      run: |
-        # Используем Wine для кросскомпиляции Windows версии
+        # Устанавливаем виртуальный дисплей
         export DISPLAY=:99
         Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
         
