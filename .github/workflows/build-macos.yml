@@ -38,10 +38,11 @@ jobs:
     - name: Install yarn
       run: npm install -g yarn
         
-    - name: Build React GUI
+    - name: Build React GUI with legacy OpenSSL
       run: |
         cd gui/Verus-Desktop-GUI/react
         yarn install --frozen-lockfile
+        # Для Node.js 18 на macOS не нужен --openssl-legacy-provider
         yarn run build
         cd ../../..
         
