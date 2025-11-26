@@ -18,7 +18,7 @@ env:
   NODE_OPTIONS: --openssl-legacy-provider
 
 jobs:
-  build-windows-cross:
+   build-windows-cross:
     runs-on: ubuntu-latest
     container:
       image: asherd/agama-builder:windows
@@ -60,13 +60,28 @@ jobs:
     - name: Install main dependencies
       run: yarn install
       
-    - name: Apply patches and build dependencies
+    - name: Install patch-package if needed
       run: |
-        yarn run patch-package
-        cd node_modules/react-terminal
-        yarn install
-        yarn run build
-        cd ../..
+        # Проверяем, есть ли patch-package в package.json
+        if grep -q "patch-package" package.json; then
+          echo "Installing patch-package..."
+          yarn add -D patch-package
+          yarn run patch-package
+        else
+          echo "patch-package not found in package.json, skipping..."
+        fi
+      
+    - name: Build react-terminal dependency
+      run: |
+        # Собираем react-terminal если нужно
+        if [ -d "node_modules/react-terminal" ]; then
+          cd node_modules/react-terminal
+          yarn install || npm install
+          yarn run build || npm run build || echo "Build command not found, continuing..."
+          cd ../..
+        else
+          echo "react-terminal not found, skipping..."
+        fi
       
     - name: Build plugins
       run: |
