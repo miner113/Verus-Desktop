@@ -15,79 +15,248 @@ env:
   PIRATE_VERSION: 5.9.0
   PIRATE_DOWNLOAD_URL: https://github.com/PirateNetwork/pirate/releases/download
   BINARY_SOURCE: VerusCoin
+  NODE_OPTIONS: --openssl-legacy-provider
 
 jobs:
   build-linux-x64:
     runs-on: ubuntu-latest
+    container:
+      image: asherd/agama-builder
+    env:
+      KOMODO_CLI_PACKAGE: komodo-${KOMODO_VERSION}-linux.tar.gz
+      KOMODO_CLI_SHA256: ed28bce09176c212c1eac9abf9fce41c948ef1199764b03b607a461146952107
+      PIRATE_CLI_PACKAGE: pirate-cli-ubuntu2004-v${PIRATE_VERSION}.zip
+      PIRATE_CLI_SHA256: 2358e992a6649517f6a72f790105468a22c5ae22302076b06f9c528b7c7c4788
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-
-    - name: Install system dependencies
+        
+    - name: Setup environment
       run: |
-        sudo apt-get update
-        sudo apt-get install -y wget unzip python3 make g++
+        if [ -z "${UPSTREAM_CLI_BRANCH}" ]; then 
+          export VERUS_CLI_LINUX="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz"
+        else
+          export VERUS_CLI_LINUX="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz"
+        fi
+        
+    - name: Build React GUI
+      run: |
+        cd gui/Verus-Desktop-GUI/react
+        yarn install
+        # Добавляем NODE_OPTIONS для обхода ошибки OpenSSL
+        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
+        cd ../../..
+        
+    - name: Setup binaries directory
+      run: |
+        mkdir -p assets/bin/linux64/verusd
+        mkdir -p assets/bin/linux64/komodod
+        mkdir -p assets/bin/linux64/pirated
+        
+    - name: Download and extract Verus CLI
+      run: |
+        # Временное решение - скачиваем из официального релиза
+        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz
+        tar -xzvf Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz --strip=1 --directory assets/bin/linux64/verusd
+        rm Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz
+        
+    - name: Download Komodo
+      run: |
+        wget ${KOMODO_DOWNLOAD_URL}/v${KOMODO_VERSION}/${KOMODO_CLI_PACKAGE}
+        echo "${KOMODO_CLI_SHA256} ${KOMODO_CLI_PACKAGE}" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
+        tar -xzvf ${KOMODO_CLI_PACKAGE} --directory assets/bin/linux64/komodod
+        rm ${KOMODO_CLI_PACKAGE}
+        
+    - name: Download Pirate
+      run: |
+        wget ${PIRATE_DOWNLOAD_URL}/v${PIRATE_VERSION}/${PIRATE_CLI_PACKAGE}
+        echo "${PIRATE_CLI_SHA256} ${PIRATE_CLI_PACKAGE}" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
+        unzip ${PIRATE_CLI_PACKAGE} -d assets/bin/linux64/pirated
+        rm ${PIRATE_CLI_PACKAGE}
+        
+    - name: Setup API keys
+      run: |
+        sed -i "s/process.env.INFURA_PROJECT_ID/'${{ secrets.INFURA_PROJECT_ID }}'/g" keys/infura.js
+        sed -i "s/process.env.ETHERSCAN_API_KEY/'${{ secrets.ETHERSCAN_KEY }}'/g" keys/etherscan.js
+        
+    - name: Install main dependencies
+      run: yarn install
+      
+    - name: Build plugins
+      run: |
+        git clone https://github.com/VerusCoin/verus-login-consent-client.git
+        cd verus-login-consent-client
+        yarn install
+        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
+        mkdir -p ../assets/plugins/builtin/verus-login-consent-client
+        cp -r build/* ../assets/plugins/builtin/verus-login-consent-client/
+        cd ..
+        rm -rf verus-login-consent-client
+        
+        git clone https://github.com/VerusCoin/verus-pbaas-visualizer.git
+        cd verus-pbaas-visualizer
+        yarn install
+        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
+        mkdir -p ../assets/plugins/builtin/verus-pbaas-visualizer
+        cp -r build/* ../assets/plugins/builtin/verus-pbaas-visualizer/
+        cd ..
+        rm -rf verus-pbaas-visualizer
+        
+    - name: Build application
+      run: yarn run dist
+      
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: verus-desktop-linux-x64
+        path: dist/
+        retention-days: 30
 
-    - name: Install yarn
-      run: npm install -g yarn
+  build-linux-arm64:
+    runs-on: ubuntu-latest
+    container:
+      image: asherd/agama-builder
+    env:
+      PIRATE_CLI_PACKAGE: pirate-cli-aarch64-v${PIRATE_VERSION}.zip
+      PIRATE_CLI_SHA256: c6a3b13881155fb11a8743a9d319254a0ca70f99c14382fb28384446fffe52c5
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
+    - name: Setup environment
+      run: |
+        if [ -z "${UPSTREAM_CLI_BRANCH}" ]; then 
+          export VERUS_CLI_LINUX="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz"
+        else
+          export VERUS_CLI_LINUX="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz"
+        fi
+        
+    - name: Build React GUI
+      run: |
+        cd gui/Verus-Desktop-GUI/react
+        yarn install
+        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
+        cd ../../..
+        
+    - name: Setup binaries directory
+      run: |
+        mkdir -p assets/bin/linux64/verusd
+        mkdir -p assets/bin/linux64/pirated
+        
+    - name: Download and extract Verus CLI
+      run: |
+        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz
+        tar -xzvf Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz --strip=1 --directory assets/bin/linux64/verusd
+        rm Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz
+        
+    - name: Download Pirate
+      run: |
+        wget ${PIRATE_DOWNLOAD_URL}/v${PIRATE_VERSION}/${PIRATE_CLI_PACKAGE}
+        echo "${PIRATE_CLI_SHA256} ${PIRATE_CLI_PACKAGE}" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
+        unzip ${PIRATE_CLI_PACKAGE} -d assets/bin/linux64/pirated
+        rm ${PIRATE_CLI_PACKAGE}
+        
+    - name: Setup API keys
+      run: |
+        sed -i "s/process.env.INFURA_PROJECT_ID/'${{ secrets.INFURA_PROJECT_ID }}'/g" keys/infura.js
+        sed -i "s/process.env.ETHERSCAN_API_KEY/'${{ secrets.ETHERSCAN_KEY }}'/g" keys/etherscan.js
+        
+    - name: Install main dependencies
+      run: yarn install
+      
+    - name: Build plugins
+      run: |
+        git clone https://github.com/VerusCoin/verus-login-consent-client.git
+        cd verus-login-consent-client
+        yarn install
+        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
+        mkdir -p ../assets/plugins/builtin/verus-login-consent-client
+        cp -r build/* ../assets/plugins/builtin/verus-login-consent-client/
+        cd ..
+        rm -rf verus-login-consent-client
+        
+        git clone https://github.com/VerusCoin/verus-pbaas-visualizer.git
+        cd verus-pbaas-visualizer
+        yarn install
+        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
+        mkdir -p ../assets/plugins/builtin/verus-pbaas-visualizer
+        cp -r build/* ../assets/plugins/builtin/verus-pbaas-visualizer/
+        cd ..
+        rm -rf verus-pbaas-visualizer
+        
+    - name: Build application
+      run: yarn run dist --arm64
+      
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: verus-desktop-linux-arm64
+        path: dist/
+        retention-days: 30
 
+  build-windows:
+    runs-on: windows-latest
+    env:
+      NODE_OPTIONS: --openssl-legacy-provider
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
+    - name: Setup environment
+      shell: bash
+      run: |
+        if [ -z "${UPSTREAM_CLI_BRANCH}" ]; then 
+          export VERUS_CLI_WINDOWS="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/Windows/Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip"
+        else
+          export VERUS_CLI_WINDOWS="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/Windows/Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip"
+        fi
+        
     - name: Build React GUI
       run: |
         cd gui/Verus-Desktop-GUI/react
         yarn install
         yarn run build
         cd ../../..
-
+        
     - name: Setup binaries directory
       run: |
-        mkdir -p assets/bin/linux64/verusd
-        mkdir -p assets/bin/linux64/komodod
-        mkdir -p assets/bin/linux64/pirated
-
-    - name: Download and extract Verus CLI
-      run: |
-        # Замените на реальный URL для скачивания Verus CLI для Linux x64
-        # Пример: wget -O Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz "https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz"
-        # Временно используем заглушку - вам нужно обеспечить реальный URL
-        echo "Скачивание Verus CLI для Linux x64"
-        # Если бинарники недоступны, то можно собрать из исходников, но это сложнее
-        # Предположим, что мы скачиваем с GitHub Releases
-        wget -O Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz "https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz"
-        tar -xzvf Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz --strip=1 --directory assets/bin/linux64/verusd
-        rm Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz
-
+        mkdir -p assets/bin/win64/komodod
+        mkdir -p assets/bin/win64/pirated
+        
     - name: Download Komodo
       run: |
-        KOMODO_CLI_PACKAGE=komodo-${KOMODO_VERSION}-linux.tar.gz
-        KOMODO_CLI_SHA256=ed28bce09176c212c1eac9abf9fce41c948ef1199764b03b607a461146952107
-        wget ${KOMODO_DOWNLOAD_URL}/v${KOMODO_VERSION}/${KOMODO_CLI_PACKAGE}
-        echo "${KOMODO_CLI_SHA256} ${KOMODO_CLI_PACKAGE}" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
-        tar -xzvf ${KOMODO_CLI_PACKAGE} --directory assets/bin/linux64/komodod
-        rm ${KOMODO_CLI_PACKAGE}
-
+        wget ${KOMODO_DOWNLOAD_URL}/v${KOMODO_VERSION}/komodo-${KOMODO_VERSION}-win.zip
+        echo "0b36821ebccdaf6bc060dc31083e6d8f48f7f8bc35e519b127bf1ccc05cf9890 komodo-${KOMODO_VERSION}-win.zip" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
+        unzip -j komodo-${KOMODO_VERSION}-win.zip komodod.exe -d assets/bin/win64/komodod
+        unzip -j komodo-${KOMODO_VERSION}-win.zip komodo-cli.exe -d assets/bin/win64/komodod
+        unzip -j komodo-${KOMODO_VERSION}-win.zip wallet-utility.exe -d assets/bin/win64/komodod
+        rm komodo-${KOMODO_VERSION}-win.zip
+        
+    - name: Download and extract Verus CLI
+      run: |
+        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip
+        unzip -qq Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip -d assets/bin/win64
+        mv assets/bin/win64/verus-cli assets/bin/win64/verusd
+        rm Verus-CLI-Windows-v${VERUSCOIN_VERSION}.zip
+        
     - name: Download Pirate
       run: |
-        PIRATE_CLI_PACKAGE=pirate-cli-ubuntu2004-v${PIRATE_VERSION}.zip
-        PIRATE_CLI_SHA256=2358e992a6649517f6a72f790105468a22c5ae22302076b06f9c528b7c7c4788
-        wget ${PIRATE_DOWNLOAD_URL}/v${PIRATE_VERSION}/${PIRATE_CLI_PACKAGE}
-        echo "${PIRATE_CLI_SHA256} ${PIRATE_CLI_PACKAGE}" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
-        unzip ${PIRATE_CLI_PACKAGE} -d assets/bin/linux64/pirated
-        rm ${PIRATE_CLI_PACKAGE}
-
+        wget ${PIRATE_DOWNLOAD_URL}/v${PIRATE_VERSION}/pirate-cli-windows-v${PIRATE_VERSION}.zip
+        echo "deb338bf2bcabfdb32be3c13dfaed78d83749fbae9d3985e47cb001ff058bb3f pirate-cli-windows-v${PIRATE_VERSION}.zip" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
+        unzip pirate-cli-windows-v${PIRATE_VERSION}.zip -d assets/bin/win64/pirated
+        rm pirate-cli-windows-v${PIRATE_VERSION}.zip
+        
     - name: Setup API keys
       run: |
         sed -i "s/process.env.INFURA_PROJECT_ID/'${{ secrets.INFURA_PROJECT_ID }}'/g" keys/infura.js
         sed -i "s/process.env.ETHERSCAN_API_KEY/'${{ secrets.ETHERSCAN_KEY }}'/g" keys/etherscan.js
-
+        
     - name: Install main dependencies
       run: yarn install
-
+      
     - name: Build plugins
       run: |
         git clone https://github.com/VerusCoin/verus-login-consent-client.git
@@ -98,7 +267,7 @@ jobs:
         cp -r build/* ../assets/plugins/builtin/verus-login-consent-client/
         cd ..
         rm -rf verus-login-consent-client
-
+        
         git clone https://github.com/VerusCoin/verus-pbaas-visualizer.git
         cd verus-pbaas-visualizer
         yarn install
@@ -107,13 +276,103 @@ jobs:
         cp -r build/* ../assets/plugins/builtin/verus-pbaas-visualizer/
         cd ..
         rm -rf verus-pbaas-visualizer
-
+        
     - name: Build application
-      run: yarn run dist
-
+      run: yarn run dist-win
+      
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: verus-desktop-linux-x64
+        name: verus-desktop-windows
+        path: dist/
+        retention-days: 30
+
+  build-macos:
+    runs-on: macos-latest
+    env:
+      NODE_OPTIONS: --openssl-legacy-provider
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
+    - name: Setup environment
+      run: |
+        if [ -z "${UPSTREAM_CLI_BRANCH}" ]; then 
+          export VERUS_CLI_MACOS="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/MacOS/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz"
+        else
+          export VERUS_CLI_MACOS="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/MacOS/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz"
+        fi
+        
+    - name: Build React GUI
+      run: |
+        cd gui/Verus-Desktop-GUI/react
+        yarn install
+        yarn run build
+        cd ../../..
+        
+    - name: Setup binaries directory
+      run: |
+        mkdir -p assets/bin/osx/verusd
+        mkdir -p assets/bin/osx/komodod
+        mkdir -p assets/bin/osx/pirated
+        
+    - name: Download and extract Verus CLI
+      run: |
+        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz
+        tar -xzf Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz --strip=1 --directory assets/bin/osx/verusd
+        rm Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz
+        
+    - name: Download Komodo
+      run: |
+        wget ${KOMODO_DOWNLOAD_URL}/v${KOMODO_VERSION}/komodo-${KOMODO_VERSION}-mac.zip
+        echo "1a092af97b34f4e2ea99b95a91599fc4fdca3881c7e3afa468a5df043a460694 komodo-${KOMODO_VERSION}-mac.zip" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
+        unzip komodo-${KOMODO_VERSION}-mac.zip -d assets/bin/osx/komodod
+        rm komodo-${KOMODO_VERSION}-mac.zip
+        
+    - name: Download Pirate
+      run: |
+        wget ${PIRATE_DOWNLOAD_URL}/v${PIRATE_VERSION}/pirate-cli-MacOS-v${PIRATE_VERSION}.zip
+        echo "c20a761c36e494cd2b19237162881bb0dcdae24e6eec996072cc5ee7135e8362 pirate-cli-MacOS-v${PIRATE_VERSION}.zip" | sha256sum -c - || { echo "SHA-256 checksum does not match. Exiting."; exit 1; }
+        unzip pirate-cli-MacOS-v${PIRATE_VERSION}.zip -d assets/bin/osx/pirated
+        rm pirate-cli-MacOS-v${PIRATE_VERSION}.zip
+        
+    - name: Setup API keys
+      run: |
+        sed -i '' "s/process.env.INFURA_PROJECT_ID/'${{ secrets.INFURA_PROJECT_ID }}'/g" keys/infura.js
+        sed -i '' "s/process.env.ETHERSCAN_API_KEY/'${{ secrets.ETHERSCAN_KEY }}'/g" keys/etherscan.js
+        
+    - name: Install main dependencies
+      run: yarn install
+      
+    - name: Build plugins
+      run: |
+        git clone https://github.com/VerusCoin/verus-login-consent-client.git
+        cd verus-login-consent-client
+        yarn install
+        yarn run build
+        mkdir -p ../assets/plugins/builtin/verus-login-consent-client
+        cp -r build/* ../assets/plugins/builtin/verus-login-consent-client/
+        cd ..
+        rm -rf verus-login-consent-client
+        
+        git clone https://github.com/VerusCoin/verus-pbaas-visualizer.git
+        cd verus-pbaas-visualizer
+        yarn install
+        yarn run build
+        mkdir -p ../assets/plugins/builtin/verus-pbaas-visualizer
+        cp -r build/* ../assets/plugins/builtin/verus-pbaas-visualizer/
+        cd ..
+        rm -rf verus-pbaas-visualizer
+        
+    - name: Build application
+      run: |
+        export USE_HARD_LINKS=false
+        yarn run dist
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: verus-desktop-macos
         path: dist/
         retention-days: 30
