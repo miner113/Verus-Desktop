@@ -1,0 +1,52 @@
+name: Build Verus Desktop
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact-name: linux
+          - os: windows-latest  
+            artifact-name: windows
+          - os: macos-latest
+            artifact-name: macos
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install and build
+      run: |
+        yarn install
+        cd gui/Verus-Desktop-GUI/react
+        yarn install
+        yarn run build
+        cd ../../..
+
+    - name: Build application
+      run: |
+        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          yarn run dist
+        elif [ "${{ matrix.os }}" == "windows-latest" ]; then
+          yarn run dist-win
+        else
+          export USE_HARD_LINKS=false
+          yarn run dist
+        fi
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: verus-desktop-${{ matrix.artifact-name }}
+        path: dist/
