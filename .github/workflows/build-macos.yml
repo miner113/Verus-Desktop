@@ -29,10 +29,10 @@ jobs:
       with:
         submodules: recursive
         
-    - name: Setup Node.js 16
+    - name: Setup Node.js 18 for macOS
       uses: actions/setup-node@v4
       with:
-        node-version: '16.20.2'
+        node-version: '18.20.4'
         cache: 'yarn'
         
     - name: Install yarn
@@ -42,7 +42,6 @@ jobs:
       run: |
         cd gui/Verus-Desktop-GUI/react
         yarn install --frozen-lockfile
-        # Для macOS используем обычную сборку без NODE_OPTIONS
         yarn run build
         cd ../../..
         
@@ -59,6 +58,16 @@ jobs:
         
     - name: Install main dependencies
       run: yarn install
+      
+    - name: Skip problematic react-terminal build
+      run: |
+        # Пропускаем сборку react-terminal, так как он уже предсобран
+        echo "Skipping react-terminal build as it should be pre-built"
+        # Убедимся, что файлы существуют
+        if [ -d "node_modules/react-terminal" ]; then
+          echo "react-terminal exists, checking for built files..."
+          ls -la node_modules/react-terminal/ || true
+        fi
       
     - name: Build plugins
       run: |
