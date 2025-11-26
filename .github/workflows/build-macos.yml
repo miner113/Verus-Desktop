@@ -42,8 +42,8 @@ jobs:
       run: |
         cd gui/Verus-Desktop-GUI/react
         yarn install --frozen-lockfile
-        # Для Node.js 18 на macOS не нужен --openssl-legacy-provider
-        yarn run build
+        # Для Node.js 18 на macOS нужен --openssl-legacy-provider для webpack
+        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
         cd ../../..
         
     - name: Setup binaries directory
@@ -60,22 +60,12 @@ jobs:
     - name: Install main dependencies
       run: yarn install
       
-    - name: Skip problematic react-terminal build
-      run: |
-        # Пропускаем сборку react-terminal, так как он уже предсобран
-        echo "Skipping react-terminal build as it should be pre-built"
-        # Убедимся, что файлы существуют
-        if [ -d "node_modules/react-terminal" ]; then
-          echo "react-terminal exists, checking for built files..."
-          ls -la node_modules/react-terminal/ || true
-        fi
-      
-    - name: Build plugins
+    - name: Build plugins with legacy OpenSSL
       run: |
         git clone https://github.com/VerusCoin/verus-login-consent-client.git
         cd verus-login-consent-client
         yarn install
-        yarn run build
+        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
         mkdir -p ../assets/plugins/builtin/verus-login-consent-client
         cp -r build/* ../assets/plugins/builtin/verus-login-consent-client/
         cd ..
@@ -84,7 +74,7 @@ jobs:
         git clone https://github.com/VerusCoin/verus-pbaas-visualizer.git
         cd verus-pbaas-visualizer
         yarn install
-        yarn run build
+        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
         mkdir -p ../assets/plugins/builtin/verus-pbaas-visualizer
         cp -r build/* ../assets/plugins/builtin/verus-pbaas-visualizer/
         cd ..
