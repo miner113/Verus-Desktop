@@ -1,4 +1,4 @@
-name: Build Verus Desktop
+name: Build Verus Desktop Macos
 
 on:
   push:
@@ -30,18 +30,19 @@ jobs:
       with:
         submodules: recursive
         
-    - name: Setup environment
-      run: |
-        if [ -z "${UPSTREAM_CLI_BRANCH}" ]; then 
-          export VERUS_CLI_MACOS="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/MacOS/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz"
-        else
-          export VERUS_CLI_MACOS="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/MacOS/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz"
-        fi
+    - name: Setup Node.js 16
+      uses: actions/setup-node@v4
+      with:
+        node-version: '16.20.2'
+        cache: 'yarn'
+        
+    - name: Install yarn
+      run: npm install -g yarn
         
     - name: Build React GUI
       run: |
         cd gui/Verus-Desktop-GUI/react
-        yarn install
+        yarn install --frozen-lockfile
         yarn run build
         cd ../../..
         
