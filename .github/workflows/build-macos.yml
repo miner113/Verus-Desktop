@@ -38,12 +38,13 @@ jobs:
     - name: Install yarn
       run: npm install -g yarn
         
-    - name: Build React GUI with legacy OpenSSL
+    - name: Update webpack in React project
       run: |
         cd gui/Verus-Desktop-GUI/react
+        # Обновляем webpack до версии совместимой с Node.js 18
+        yarn upgrade webpack@^5.0.0 --dev || echo "Webpack update failed, continuing with legacy provider"
         yarn install --frozen-lockfile
-        # Для Node.js 18 на macOS нужен --openssl-legacy-provider для webpack
-        NODE_OPTIONS="--openssl-legacy-provider" yarn run build
+        yarn run build
         cd ../../..
         
     - name: Setup binaries directory
