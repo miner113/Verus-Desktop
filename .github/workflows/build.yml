@@ -35,9 +35,9 @@ jobs:
     - name: Setup environment
       run: |
         if [ -z "${UPSTREAM_CLI_BRANCH}" ]; then 
-          export VERUS_CLI_LINUX="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz"
+          export VERUS_CLI_LINUX="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tgz"
         else
-          export VERUS_CLI_LINUX="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz"
+          export VERUS_CLI_LINUX="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tgz"
         fi
         
     - name: Build React GUI
@@ -57,9 +57,9 @@ jobs:
     - name: Download and extract Verus CLI
       run: |
         # Временное решение - скачиваем из официального релиза
-        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz
-        tar -xzvf Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz --strip=1 --directory assets/bin/linux64/verusd
-        rm Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tar.gz
+        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tgz
+        tar -xzvf Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tgz --strip=1 --directory assets/bin/linux64/verusd
+        rm Verus-CLI-Linux-v${VERUSCOIN_VERSION}-x86_64.tgz
         
     - name: Download Komodo
       run: |
@@ -128,9 +128,9 @@ jobs:
     - name: Setup environment
       run: |
         if [ -z "${UPSTREAM_CLI_BRANCH}" ]; then 
-          export VERUS_CLI_LINUX="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz"
+          export VERUS_CLI_LINUX="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tgz"
         else
-          export VERUS_CLI_LINUX="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz"
+          export VERUS_CLI_LINUX="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/Linux/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tgz"
         fi
         
     - name: Build React GUI
@@ -147,9 +147,9 @@ jobs:
         
     - name: Download and extract Verus CLI
       run: |
-        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz
-        tar -xzvf Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz --strip=1 --directory assets/bin/linux64/verusd
-        rm Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tar.gz
+        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tgz
+        tar -xzvf Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tgz --strip=1 --directory assets/bin/linux64/verusd
+        rm Verus-CLI-Linux-v${VERUSCOIN_VERSION}-arm64.tgz
         
     - name: Download Pirate
       run: |
@@ -299,9 +299,9 @@ jobs:
     - name: Setup environment
       run: |
         if [ -z "${UPSTREAM_CLI_BRANCH}" ]; then 
-          export VERUS_CLI_MACOS="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/MacOS/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz"
+          export VERUS_CLI_MACOS="${BINARY_SOURCE}/${DEFAULT_VERUSCOIN_BRANCH}/MacOS/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tgz"
         else
-          export VERUS_CLI_MACOS="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/MacOS/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz"
+          export VERUS_CLI_MACOS="${UPSTREAM_TRIGGER}/${UPSTREAM_CLI_BRANCH}/MacOS/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tgz"
         fi
         
     - name: Build React GUI
@@ -319,9 +319,9 @@ jobs:
         
     - name: Download and extract Verus CLI
       run: |
-        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz
-        tar -xzf Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz --strip=1 --directory assets/bin/osx/verusd
-        rm Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tar.gz
+        wget https://github.com/VerusCoin/VerusCoin/releases/download/v${VERUSCOIN_VERSION}/Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tgz
+        tar -xzf Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tgz --strip=1 --directory assets/bin/osx/verusd
+        rm Verus-CLI-MacOS-v${VERUSCOIN_VERSION}.tgz
         
     - name: Download Komodo
       run: |
