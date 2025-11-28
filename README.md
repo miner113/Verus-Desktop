@@ -17,7 +17,6 @@ The Verus Multicoin Wallet and Ecosystem GUI
 
 2) [Install git](https://git-scm.com/)
 
-
 #### Build & Start Verus-Desktop-GUI (frontend)
 
 ```shell
@@ -31,7 +30,6 @@ Now please create a directory called `bin` inside `assets/` and afterwards copy 
 and copy `verusd` and `verus-cli` into it.
 
 From within `Verus/` the structure will be `assets/bin/linux64` (for example on linux).
-
 
 #### Start Verus App (electron)
 
@@ -47,7 +45,6 @@ yarn start devmode
 ```
 
 You are ready to dev!
-
 
 ## Bundling & packaging:
 
